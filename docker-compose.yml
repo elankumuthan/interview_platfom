@@ -1,4 +1,3 @@
-# docker-compose.yml
 services:
   db:
     image: postgres:16
@@ -15,29 +14,47 @@ services:
       timeout: 5s
       retries: 5
 
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   web:
     build: .
     restart: unless-stopped
     depends_on:
       db:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     env_file:
       - .env
-    # keep the app internal (no published ports)
+    environment:
+      # Flask-Limiter
+      RATE_LIMIT_STORAGE_URI: redis://redis:6379/0
+      DEFAULT_RATE_LIMITS: 300 per hour;50 per minute
+      # Keep a single scheduler instance (see note in __init__.py)
+      RUN_SCHEDULER: "1"
+    # keep 8080 internal; Caddy will reverse-proxy
     command: >
-      bash -lc "flask --app app.main db_init && gunicorn -w 3 -b 0.0.0.0:8080 app.main:app --timeout 600"
+      bash -lc "flask --app app.main db_init &&
+                gunicorn -w 1 -b 0.0.0.0:8080 app.main:app --timeout 600"
 
   caddy:
     image: caddy:2
     restart: unless-stopped
     depends_on:
       - web
-    environment:
-      DOMAIN: booking.example.com   # <-- change to your real domain
-      EMAIL: admin@example.com      # <-- change to your email
     ports:
       - "80:80"
-      - "443:443"
+      # When you switch to a real domain + HTTPS, also expose 443 and
+      # update your Caddyfile accordingly:
+      # - "443:443"
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data

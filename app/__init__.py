@@ -3,6 +3,10 @@ import logging
 from logging.handlers import RotatingFileHandler
 from flask import Flask
 from dotenv import load_dotenv
+
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+
 from .models import db, migrate, JobLog
 from .auth import login_manager
 from .scheduler import init_scheduler
@@ -51,6 +55,20 @@ def create_app():
     _setup_logging(app)
     app.log_db = log_db  # allow current_app.log_db(...)
 
+    # ---- Rate limiting (Flask-Limiter) ----
+    # Use Redis in production: RATE_LIMIT_STORAGE_URI=redis://redis:6379/0
+    storage_uri = os.environ.get("RATE_LIMIT_STORAGE_URI", "memory://")
+    default_limits = os.environ.get("DEFAULT_RATE_LIMITS", "300 per hour;50 per minute")
+    limiter = Limiter(
+        key_func=get_remote_address,
+        storage_uri=storage_uri,
+        default_limits=[s.strip() for s in default_limits.split(";") if s.strip()],
+    )
+    limiter.init_app(app)
+    # expose for views that use current_app.limiter
+    app.limiter = limiter
+
+    # Core extensions
     db.init_app(app)
     migrate.init_app(app, db)
     login_manager.init_app(app)
@@ -64,7 +82,9 @@ def create_app():
     app.register_blueprint(admin_bp)
 
     # Scheduler
-    if app.config["SCHEDULER_ENABLED"]:
+    # Note: With gunicorn -w 3, each worker will run create_app(). If you want only one
+    # scheduler instance, either run with -w 1 or gate this by an env var (e.g. RUN_SCHEDULER=1).
+    if app.config["SCHEDULER_ENABLED"] and os.environ.get("RUN_SCHEDULER", "1") == "1":
         init_scheduler(app)
 
     @app.get("/health")
