@@ -1,0 +1,27 @@
+{% extends "base.html" %}{% block content %}
+<div class="bg-white p-3 shadow-sm rounded">
+  <h4>Admin</h4>
+  <table class="table">
+    <thead><tr><th>ID</th><th>User</th><th>Start</th><th>End</th><th>Status</th><th>Disk</th><th>Actions</th></tr></thead>
+    <tbody>
+    {% for b in bookings %}
+      <tr>
+        <td>{{ b.id }}</td>
+        <td>{{ b.user.username }}</td>
+        <td>{{ b.start_at_utc }}</td>
+        <td>{{ b.end_at_utc }}</td>
+        <td>{{ b.status }}</td>
+        <td>{{ b.disk_name or "" }}</td>
+        <td>
+          {% if b.status in ['pending','approved'] %}
+            <a class="btn btn-sm btn-success" href="{{ url_for('admin.approve', booking_id=b.id) }}">Approve</a>
+            <a class="btn btn-sm btn-secondary" href="{{ url_for('admin.start_now', booking_id=b.id) }}">Start now</a>
+            <a class="btn btn-sm btn-outline-danger" href="{{ url_for('admin.reject', booking_id=b.id) }}">Reject</a>
+          {% endif %}
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

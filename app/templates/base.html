@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>{{ config.SITE_NAME }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+  </head>
+  <body>
+    <header class="navbar">
+      <div class="navbar-inner">
+        <a class="brand" href="{{ url_for('booking.index') }}">{{ config.SITE_NAME }}</a>
+        <div class="nav-spacer"></div>
+
+        {% if current_user.is_authenticated %}
+          <span class="user-chip">Hello, {{ current_user.username }}</span>
+          {% if current_user.role == 'admin' %}
+            <a class="btn btn-outline" href="{{ url_for('admin.dashboard') }}">Admin</a>
+          {% endif %}
+          <a class="btn btn-danger" href="{{ url_for('auth.logout') }}">Logout</a>
+        {% else %}
+          <a class="btn btn-primary" href="{{ url_for('auth.login') }}">Login</a>
+          <a class="btn btn-outline" href="{{ url_for('auth.register') }}">Register</a>
+        {% endif %}
+      </div>
+    </header>
+
+    <main class="container">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+            <div class="flash {{ category }}">{{ message }}</div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+
+      {% block content %}{% endblock %}
+    </main>
+  </body>
+</html>
