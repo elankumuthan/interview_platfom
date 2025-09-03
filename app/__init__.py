@@ -10,7 +10,7 @@ from flask_limiter.util import get_remote_address
 from .models import db, migrate, JobLog
 from .auth import login_manager
 from .scheduler import init_scheduler
-
+from .extensions import limiter
 
 def _setup_logging(app: Flask):
     # Console logs (docker)
