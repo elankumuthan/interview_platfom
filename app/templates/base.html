@@ -15,6 +15,7 @@
         <a class="btn btn-outline-secondary me-2" href="{{ url_for('booking.calendar_view') }}">Calendar</a>
         {% if current_user.role == 'admin' %}
           <a class="btn btn-warning me-2" href="{{ url_for('admin.dashboard') }}">Admin</a>
+          <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('admin.admin_logs') }}">Logs</a>
         {% endif %}
         <a class="btn btn-danger" href="{{ url_for('auth.logout') }}">Logout</a>
       {% else %}

@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block content %}
+<h3 class="mb-3">Job Logs (latest 200)</h3>
+<table class="table table-sm table-striped">
+  <thead>
+    <tr>
+      <th>Time</th>
+      <th>Level</th>
+      <th>Action</th>
+      <th>Booking</th>
+      <th>Message</th>
+      <th>Context</th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for r in logs %}
+    <tr>
+      <td>{{ r.created_at }}</td>
+      <td>{{ r.level }}</td>
+      <td>{{ r.action }}</td>
+      <td>{{ r.booking_id or "-" }}</td>
+      <td style="white-space:pre-wrap">{{ r.message }}</td>
+      <td><code style="white-space:pre-wrap">{{ r.context }}</code></td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

@@ -1,22 +1,66 @@
-{% extends "base.html" %}{% block content %}
+{% extends "base.html" %}
+{% block content %}
 <div class="bg-white p-3 shadow-sm rounded">
-  <h4>Admin</h4>
-  <table class="table">
-    <thead><tr><th>ID</th><th>User</th><th>Start</th><th>End</th><th>Status</th><th>Disk</th><th>Actions</th></tr></thead>
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="m-0">Admin</h4>
+    <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('admin.admin_logs') }}">View logs</a>
+  </div>
+
+  <table class="table table-sm align-middle">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>User (HMAC)</th>
+        <th>Start</th>
+        <th>End</th>
+        <th>Status</th>
+        <th>VM</th>
+        <th>Disk</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
     <tbody>
     {% for b in bookings %}
       <tr>
         <td>{{ b.id }}</td>
-        <td>{{ b.user.username }}</td>
-        <td>{{ b.start_at_utc }}</td>
-        <td>{{ b.end_at_utc }}</td>
-        <td>{{ b.status }}</td>
-        <td>{{ b.disk_name or "" }}</td>
+        <td><code>{{ b.user_hmac[:10] }}…</code></td>
+        <td>{{ b.start_at.strftime('%Y-%m-%d %H:%M %Z') if b.start_at else '-' }}</td>
+        <td>{{ b.end_at.strftime('%Y-%m-%d %H:%M %Z') if b.end_at else '-' }}</td>
         <td>
-          {% if b.status in ['pending','approved'] %}
-            <a class="btn btn-sm btn-success" href="{{ url_for('admin.approve', booking_id=b.id) }}">Approve</a>
-            <a class="btn btn-sm btn-secondary" href="{{ url_for('admin.start_now', booking_id=b.id) }}">Start now</a>
-            <a class="btn btn-sm btn-outline-danger" href="{{ url_for('admin.reject', booking_id=b.id) }}">Reject</a>
+          {% if b.approved %}
+            <span class="badge bg-success">approved</span>
+          {% else %}
+            <span class="badge bg-warning text-dark">pending</span>
+          {% endif %}
+          {% if b.last_status %}
+            <span class="badge bg-info ms-1">{{ b.last_status }}</span>
+          {% endif %}
+        </td>
+        <td><code>{{ b.vm_name or '-' }}</code></td>
+        <td><code>{{ b.disk_name or '-' }}</code></td>
+        <td class="text-nowrap">
+          {% if b.approved %}
+            <form method="post" action="{{ url_for('admin.admin_run_now', booking_id=b.id) }}" class="d-inline">
+              <button class="btn btn-sm btn-primary">Run now</button>
+            </form>
+          {% else %}
+            <!-- If your approve/reject endpoints differ, change these two url_for calls -->
+            <form method="post" action="{{ url_for('booking.approve_booking', booking_id=b.id) }}" class="d-inline">
+              <button class="btn btn-sm btn-success">Approve</button>
+            </form>
+            <form method="post" action="{{ url_for('booking.reject_booking', booking_id=b.id) }}" class="d-inline">
+              <button class="btn btn-sm btn-outline-danger">Reject</button>
+            </form>
+          {% endif %}
+        </td>
+      </tr>
+
+      <tr class="small text-muted">
+        <td></td>
+        <td colspan="7">
+          last run: {{ b.last_run_at or '-' }}
+          {% if b.last_error %}
+            · <span class="text-danger">error: {{ b.last_error }}</span>
           {% endif %}
         </td>
       </tr>

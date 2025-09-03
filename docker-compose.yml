@@ -1,3 +1,4 @@
+# docker-compose.yml
 services:
   db:
     image: postgres:16
@@ -22,23 +23,21 @@ services:
         condition: service_healthy
     env_file:
       - .env
-    # ⚠️ no ports here; keep 8080 internal
+    # keep the app internal (no published ports)
     command: >
       bash -lc "flask --app app.main db_init && gunicorn -w 3 -b 0.0.0.0:8080 app.main:app --timeout 600"
 
-caddy:
+  caddy:
     image: caddy:2
     restart: unless-stopped
     depends_on:
       - web
     environment:
-      - DOMAIN=booking.example.com        # <-- change to your domain
-      - EMAIL=admin@example.com           # <-- email for Let's Encrypt notices
+      DOMAIN: booking.example.com   # <-- change to your real domain
+      EMAIL: admin@example.com      # <-- change to your email
     ports:
-      # If you want 443-only, keep just the 443 mapping.
-      # - "443:443"
-      # If you want 80→443 redirects and easier HTTP-01 challenge, also map 80:
-       - "80:80"
+      - "80:80"
+      - "443:443"
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
